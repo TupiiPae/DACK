@@ -1,31 +1,118 @@
+{# templates/cart.html #}
 {% extends "base.html" %}
-{% block title %}Cart{% endblock %}
+
 {% block content %}
-<h1>Your Cart</h1>
-{% if cart_items %}
-    <table>
-        <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-            <th>Price</th>
-            <th>Subtotal</th>
-            <th>Action</th>
-        </tr>
-        {% for item in cart_items %}
-        <tr>
-            <td>{{ item.product.name }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.product.price }} USD</td>
-            <td>{{ item.product.price * item.quantity }} USD</td>
-            <td>
-                <a href="{{ url_for('remove_from_cart', item_id=item.id) }}">Remove</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <p>Total: {{ total }} USD</p>
-    <a href="{{ url_for('checkout') }}">Proceed to Checkout</a>
-{% else %}
-    <p>Your cart is empty.</p>
-{% endif %}
+<div class="container py-5">
+    <h2 class="mb-4">Giỏ hàng</h2>
+    
+    {% if cart_items %}
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Giá</th>
+                                <th>Số lượng</th>
+                                <th>Tổng</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ url_for('static', filename='images/' + item.product.image) }}" alt="{{ item.product.name }}" 
+                                             class="img-thumbnail me-3" style="width: 80px;">
+                                        <div>
+                                            <h6 class="mb-0">{{ item.product.name }}</h6>
+                                            <small class="text-muted">Còn {{ item.product.stock }} sản phẩm</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ "{:,.0f}".format(item.product.price) }}đ</td>
+                                <td style="width: 150px;">
+                                    <div class="input-group">
+                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                onclick="updateQuantity({{ item.id }}, -1)">-</button>
+                                        <input type="number" class="form-control text-center quantity-input" 
+                                               value="{{ item.quantity }}" min="1" max="{{ item.product.stock }}"
+                                               onchange="updateCart({{ item.id }}, this.value)">
+                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                onclick="updateQuantity({{ item.id }}, 1)">+</button>
+                                    </div>
+                                </td>
+                                <td id="subtotal-{{ item.id }}">
+                                    {{ "{:,.0f}".format(item.product.price * item.quantity) }}đ
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('remove_from_cart', item_id=item.id) }}" 
+                                       class="btn btn-outline-danger btn-sm"
+                                       onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Tổng cộng:</strong></td>
+                                <td id="total-amount"><strong>{{ "{:,.0f}".format(total) }}đ</strong></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="text-end mt-3">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Tiếp tục mua sắm</a>
+                    <a href="{{ url_for('checkout') }}" class="btn btn-primary">Tiến hành thanh toán</a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <h4>Giỏ hàng trống</h4>
+            <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Tiếp tục mua sắm</a>
+        </div>
+    {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+function updateQuantity(itemId, change) {
+    const input = document.querySelector(`input[onchange="updateCart(${itemId}, this.value)"]`);
+    const newValue = parseInt(input.value) + change;
+    if (newValue >= 1 && newValue <= parseInt(input.max)) {
+        input.value = newValue;
+        updateCart(itemId, newValue);
+    }
+}
+
+function updateCart(itemId, quantity) {
+    fetch(`/cart/update/${itemId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `quantity=${quantity}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        document.getElementById(`subtotal-${itemId}`).textContent = 
+            new Intl.NumberFormat('vi-VN').format(data.subtotal) + 'đ';
+        document.getElementById('total-amount').innerHTML = 
+            `<strong>${new Intl.NumberFormat('vi-VN').format(data.total)}đ</strong>`;
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %}
 {% endblock %}

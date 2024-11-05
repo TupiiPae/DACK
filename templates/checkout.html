@@ -1,0 +1,79 @@
+{# templates/checkout.html #}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Thông tin đặt hàng</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="checkout-form">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Họ tên</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ current_user.full_name }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Số điện thoại</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   value="{{ current_user.phone }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Địa chỉ giao hàng</label>
+                            <textarea class="form-control" id="address" name="address" rows="3" 
+                                      required>{{ current_user.address }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Ghi chú</label>
+                            <textarea class="form-control" id="note" name="note" rows="3"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Đặt hàng</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart_items %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <h6 class="mb-0">{{ item.product.name }}</h6>
+                            <small class="text-muted">{{ item.quantity }} x {{ "{:,.0f}".format(item.product.price) }}đ</small>
+                        </div>
+                        <span>{{ "{:,.0f}".format(item.product.price * item.quantity) }}đ</span>
+                    </div>
+                    {% endfor %}
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <h6 class="mb-0">Tổng cộng</h6>
+                        <h6 class="mb-0">{{ "{:,.0f}".format(total) }}đ</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.getElementById('checkout-form').onsubmit = function(e) {
+    if (!confirm('Xác nhận đặt hàng?')) {
+        e.preventDefault();
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}
